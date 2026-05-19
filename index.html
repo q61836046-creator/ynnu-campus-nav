@@ -1,0 +1,2708 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>云南师范大学 · GIS智慧校园导航</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0d3b3b 0%, #1a5f5f 50%, #0d3b3b 100%);
+            min-height: 100vh;
+        }
+
+        .app-container {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 毛玻璃左侧面板 */
+        .control-panel {
+            width: 420px;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            box-shadow: 4px 0 30px rgba(0,0,0,0.12);
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+            overflow: hidden;
+            border-right: 1px solid rgba(255,255,255,0.4);
+        }
+
+        .panel-header {
+            background: linear-gradient(135deg, #1e6f5c 0%, #289e7a 50%, #1e6f5c 100%);
+            color: white;
+            padding: 24px 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .panel-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+            animation: shimmer 8s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(10%, 10%); }
+        }
+
+        .panel-header h1 {
+            font-size: 22px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .panel-header .subtitle {
+            font-size: 13px;
+            opacity: 0.9;
+            margin-top: 8px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .panel-content::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .panel-content::-webkit-scrollbar-thumb {
+            background: rgba(30, 111, 92, 0.3);
+            border-radius: 3px;
+        }
+
+        .section {
+            background: rgba(255,255,255,0.7);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 14px;
+            border: 1px solid rgba(30, 111, 92, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .section:hover {
+            box-shadow: 0 4px 20px rgba(30, 111, 92, 0.1);
+            border-color: rgba(30, 111, 92, 0.2);
+        }
+
+        .section-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1e6f5c;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(30, 111, 92, 0.15);
+        }
+
+        .section-title i {
+            margin-right: 8px;
+            color: #1e6f5c;
+        }
+
+        .btn-icon {
+            background: linear-gradient(135deg, #1e6f5c, #289e7a);
+            border: none;
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-icon:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(30, 111, 92, 0.3);
+        }
+
+        .btn-icon.outline {
+            background: white;
+            color: #1e6f5c;
+            border: 1px solid #1e6f5c;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .search-box select {
+            flex: 1;
+            padding: 12px 14px;
+            border: 2px solid rgba(30, 111, 92, 0.15);
+            border-radius: 12px;
+            font-size: 14px;
+            background: white;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .search-box select:focus {
+            outline: none;
+            border-color: #1e6f5c;
+            box-shadow: 0 0 0 3px rgba(30, 111, 92, 0.1);
+        }
+
+        .search-box button {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #1e6f5c, #289e7a);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .search-box button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(30, 111, 92, 0.3);
+        }
+
+        .info-detail {
+            background: linear-gradient(135deg, rgba(30, 111, 92, 0.05), rgba(40, 158, 122, 0.05));
+            border-radius: 14px;
+            padding: 16px;
+            font-size: 14px;
+            line-height: 2;
+            border-left: 4px solid #1e6f5c;
+            margin-top: 10px;
+        }
+
+        .info-detail .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 0;
+        }
+
+        .info-detail .info-label {
+            color: #666;
+            min-width: 60px;
+        }
+
+        .info-detail .info-value {
+            color: #1e6f5c;
+            font-weight: 500;
+        }
+
+        .service-btn {
+            margin-top: 12px;
+            padding: 10px 16px;
+            background: linear-gradient(135deg, #1e6f5c, #289e7a);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 13px;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .service-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(30, 111, 92, 0.4);
+        }
+
+        /* 食堂楼层详情 */
+        .canteen-detail {
+            margin-top: 14px;
+            background: white;
+            border-radius: 14px;
+            padding: 14px;
+            display: none;
+        }
+
+        .canteen-title {
+            font-weight: 600;
+            color: #1e6f5c;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .floor-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .floor-btn {
+            padding: 8px 16px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+
+        .floor-btn:hover {
+            border-color: #1e6f5c;
+            color: #1e6f5c;
+        }
+
+        .floor-btn.active {
+            background: linear-gradient(135deg, #1e6f5c, #289e7a);
+            color: white;
+            border-color: transparent;
+        }
+
+        .stall-list {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 12px;
+            max-height: 140px;
+            overflow-y: auto;
+        }
+
+        .stall-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .stall-item:hover {
+            transform: translateX(4px);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+
+        .stall-info {
+            flex: 1;
+        }
+
+        .stall-name {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .stall-tags {
+            font-size: 11px;
+            color: #999;
+            margin-top: 2px;
+        }
+
+        .stall-delete {
+            background: none;
+            border: none;
+            color: #ff4d4f;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .stall-delete:hover {
+            background: rgba(255, 77, 79, 0.1);
+        }
+
+        .action-btns {
+            margin-top: 12px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btns button {
+            flex: 1;
+            padding: 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s ease;
+        }
+
+        .add-stall-btn {
+            background: linear-gradient(135deg, #1e6f5c, #289e7a);
+            color: white;
+            border: none;
+        }
+
+        .add-floor-btn {
+            background: white;
+            color: #1e6f5c;
+            border: 2px solid #1e6f5c;
+        }
+
+        .add-form {
+            margin-top: 12px;
+            background: white;
+            border-radius: 12px;
+            padding: 14px;
+        }
+
+        .add-form input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .add-form input:focus {
+            outline: none;
+            border-color: #1e6f5c;
+        }
+
+        .add-form .form-btns {
+            display: flex;
+            gap: 8px;
+        }
+
+        .add-form .form-btns button {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .save-btn {
+            background: #1e6f5c;
+            color: white;
+            border: none;
+        }
+
+        .cancel-btn {
+            background: white;
+            color: #666;
+            border: 1px solid #ddd;
+        }
+
+        /* 地点管理面板 */
+        .manage-section {
+            display: none;
+        }
+
+        .manage-section.show {
+            display: block;
+        }
+
+        .manage-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .manage-btns {
+            display: flex;
+            gap: 6px;
+        }
+
+        .poi-list {
+            max-height: 220px;
+            overflow-y: auto;
+            margin-bottom: 12px;
+        }
+
+        .poi-list-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .poi-list-item:hover {
+            background: rgba(30, 111, 92, 0.08);
+            transform: translateX(4px);
+        }
+
+        .poi-list-item .poi-icon {
+            margin-right: 8px;
+        }
+
+        .poi-list-item .poi-name {
+            flex: 1;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .poi-list-item .poi-floors {
+            font-size: 11px;
+            color: #999;
+            margin-left: 6px;
+        }
+
+        .poi-list-item .poi-delete {
+            background: none;
+            border: none;
+            color: #ff4d4f;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .poi-list-item .poi-delete:hover {
+            background: rgba(255, 77, 79, 0.1);
+        }
+
+        .add-poi-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #1e6f5c, #289e7a);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .add-poi-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(30, 111, 92, 0.4);
+        }
+
+        .edit-form {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 12px;
+            display: none;
+        }
+
+        .edit-form.show {
+            display: block;
+        }
+
+        .edit-form label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: #1e6f5c;
+            margin-bottom: 6px;
+        }
+
+        .edit-form input,
+        .edit-form select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid rgba(30, 111, 92, 0.15);
+            border-radius: 10px;
+            font-size: 14px;
+            margin-bottom: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .edit-form input:focus,
+        .edit-form select:focus {
+            outline: none;
+            border-color: #1e6f5c;
+            box-shadow: 0 0 0 3px rgba(30, 111, 92, 0.1);
+        }
+
+        .coord-display {
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 12px;
+        }
+
+        .edit-form .form-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .edit-form .form-actions button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        /* 路径规划 */
+        .input-group {
+            margin-bottom: 14px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #444;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .input-group select {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid rgba(30, 111, 92, 0.15);
+            border-radius: 12px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .input-group select:focus {
+            outline: none;
+            border-color: #1e6f5c;
+            box-shadow: 0 0 0 3px rgba(30, 111, 92, 0.1);
+        }
+
+        .route-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px 0;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #1e6f5c, #289e7a);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(30, 111, 92, 0.4);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #1e6f5c;
+            border: 2px solid #1e6f5c;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(30, 111, 92, 0.05);
+        }
+
+        .route-result {
+            margin-top: 16px;
+            padding: 16px;
+            background: linear-gradient(135deg, rgba(30, 111, 92, 0.08), rgba(40, 158, 122, 0.05));
+            border-radius: 14px;
+            display: none;
+        }
+
+        .route-result.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-summary {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(30, 111, 92, 0.1);
+        }
+
+        .result-item {
+            text-align: center;
+        }
+
+        .result-item .value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1e6f5c;
+        }
+
+        .result-item .label {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        .result-steps {
+            max-height: 180px;
+            overflow-y: auto;
+            font-size: 13px;
+        }
+
+        .result-steps .step {
+            padding: 8px 0;
+            border-bottom: 1px dashed #eee;
+            display: flex;
+            gap: 10px;
+        }
+
+        .result-steps .step-num {
+            width: 22px;
+            height: 22px;
+            background: #1e6f5c;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            flex-shrink: 0;
+        }
+
+        .result-steps .step-text {
+            flex: 1;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .panel-footer {
+            padding: 14px;
+            text-align: center;
+            font-size: 11px;
+            color: #999;
+            border-top: 1px solid rgba(0,0,0,0.05);
+            background: rgba(248,249,250,0.5);
+        }
+
+        /* 地图容器 */
+        .map-container {
+            flex: 1;
+            position: relative;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* 右上角工具栏 */
+        .top-right-toolbar {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 150;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .toolbar-btn {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border: none;
+            border-radius: 12px;
+            padding: 12px 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .toolbar-btn:hover {
+            transform: translateX(-4px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+
+        .toolbar-btn.active {
+            background: linear-gradient(135deg, #1e6f5c, #289e7a);
+            color: white;
+        }
+
+        .toolbar-btn i {
+            font-size: 16px;
+        }
+
+        /* 优化版图例 */
+        .map-legend {
+            position: absolute;
+            bottom: 30px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            padding: 18px 20px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+            font-size: 13px;
+            z-index: 100;
+            min-width: 200px;
+        }
+
+        .legend-title {
+            font-weight: 700;
+            font-size: 15px;
+            color: #1e6f5c;
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(30, 111, 92, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px 16px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 8px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .legend-item:hover {
+            background: rgba(30, 111, 92, 0.08);
+        }
+
+        .legend-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            flex-shrink: 0;
+        }
+
+        .legend-text {
+            color: #555;
+            font-size: 13px;
+        }
+
+        .legend-icon {
+            font-size: 14px;
+        }
+
+        /* 分类筛选 */
+        .category-filter {
+            margin-bottom: 12px;
+        }
+
+        .category-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .category-tag {
+            padding: 6px 12px;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 16px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #666;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .category-tag:hover,
+        .category-tag.active {
+            background: #1e6f5c;
+            color: white;
+            border-color: #1e6f5c;
+        }
+
+        .category-tag i {
+            font-size: 12px;
+        }
+
+        /* 坐标拾取提示 */
+        .pick-hint {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 16px 28px;
+            border-radius: 12px;
+            font-size: 15px;
+            z-index: 9999;
+            display: none;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .pick-hint.show {
+            display: block;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+            font-size: 13px;
+        }
+
+        .empty-state i {
+            font-size: 32px;
+            margin-bottom: 8px;
+            opacity: 0.5;
+        }
+
+        /* ========== 深色模式 ========== */
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: rgba(255, 255, 255, 0.92);
+            --bg-tertiary: rgba(255, 255, 255, 0.7);
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --border-color: rgba(0, 0, 0, 0.08);
+            --shadow-color: rgba(0, 0, 0, 0.12);
+            --map-overlay: rgba(255, 255, 255, 0.95);
+            --card-bg: #ffffff;
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #1a1a2e;
+            --bg-secondary: rgba(30, 30, 50, 0.95);
+            --bg-tertiary: rgba(40, 40, 70, 0.8);
+            --text-primary: #e8e8e8;
+            --text-secondary: #a0a0a0;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --shadow-color: rgba(0, 0, 0, 0.4);
+            --map-overlay: rgba(30, 30, 50, 0.95);
+            --card-bg: #252540;
+        }
+
+        [data-theme="dark"] body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #1a1a2e 100%);
+        }
+
+        [data-theme="dark"] .control-panel {
+            background: var(--bg-secondary);
+            border-right-color: var(--border-color);
+        }
+
+        [data-theme="dark"] .panel-header {
+            background: linear-gradient(135deg, #2d4a5c 0%, #1e3a4c 100%);
+        }
+
+        [data-theme="dark"] .section {
+            background: var(--bg-tertiary);
+            border-color: var(--border-color);
+        }
+
+        [data-theme="dark"] .section-title {
+            color: #4ecdc4;
+            border-bottom-color: rgba(78, 205, 196, 0.2);
+        }
+
+        [data-theme="dark"] .section-title i {
+            color: #4ecdc4;
+        }
+
+        [data-theme="dark"] .search-box select,
+        [data-theme="dark"] .input-group select {
+            background: var(--bg-primary);
+            border-color: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        [data-theme="dark"] .info-detail {
+            background: linear-gradient(135deg, rgba(78, 205, 196, 0.1), rgba(78, 205, 196, 0.05));
+            border-left-color: #4ecdc4;
+        }
+
+        [data-theme="dark"] .info-detail .info-label {
+            color: #a0a0a0;
+        }
+
+        [data-theme="dark"] .info-detail .info-value {
+            color: #4ecdc4;
+        }
+
+        [data-theme="dark"] .map-legend {
+            background: var(--map-overlay);
+            box-shadow: 0 8px 32px var(--shadow-color);
+        }
+
+        [data-theme="dark"] .legend-title {
+            color: #4ecdc4;
+            border-bottom-color: rgba(78, 205, 196, 0.2);
+        }
+
+        [data-theme="dark"] .legend-text {
+            color: #c0c0c0;
+        }
+
+        [data-theme="dark"] .toolbar-btn {
+            background: var(--map-overlay);
+            color: var(--text-primary);
+        }
+
+        [data-theme="dark"] .stall-list {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        [data-theme="dark"] .stall-item {
+            background: var(--bg-primary);
+        }
+
+        [data-theme="dark"] .stall-name {
+            color: var(--text-primary);
+        }
+
+        [data-theme="dark"] .poi-list-item {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        [data-theme="dark"] .poi-list-item .poi-name {
+            color: var(--text-primary);
+        }
+
+        [data-theme="dark"] .floor-btn {
+            background: var(--bg-primary);
+            border-color: #444;
+            color: #ccc;
+        }
+
+        [data-theme="dark"] .category-tag {
+            background: var(--bg-primary);
+            border-color: #444;
+            color: #ccc;
+        }
+
+        [data-theme="dark"] .add-form,
+        [data-theme="dark"] .edit-form {
+            background: var(--bg-primary);
+        }
+
+        [data-theme="dark"] .add-form input,
+        [data-theme="dark"] .edit-form input,
+        [data-theme="dark"] .edit-form select {
+            background: var(--bg-secondary);
+            border-color: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        [data-theme="dark"] .coord-display {
+            background: rgba(0, 0, 0, 0.3);
+            color: #a0a0a0;
+        }
+
+        [data-theme="dark"] .route-result {
+            background: linear-gradient(135deg, rgba(78, 205, 196, 0.15), rgba(78, 205, 196, 0.08));
+        }
+
+        [data-theme="dark"] .result-item .value {
+            color: #4ecdc4;
+        }
+
+        [data-theme="dark"] .result-steps .step-text {
+            color: #b0b0b0;
+        }
+
+        [data-theme="dark"] .pick-hint {
+            background: rgba(0, 0, 0, 0.85);
+        }
+
+        [data-theme="dark"] .panel-footer {
+            background: rgba(20, 20, 40, 0.5);
+            color: #888;
+        }
+
+        /* 深色模式切换按钮 */
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 80px;
+            z-index: 200;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #1e6f5c;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        [data-theme="dark"] .theme-toggle {
+            background: rgba(30, 30, 50, 0.95);
+            color: #4ecdc4;
+        }
+
+        /* ========== 收藏和历史记录 ========== */
+        .tab-nav {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 14px;
+            background: rgba(30, 111, 92, 0.08);
+            padding: 4px;
+            border-radius: 12px;
+        }
+
+        .tab-nav .tab-btn {
+            flex: 1;
+            padding: 10px 12px;
+            border: none;
+            background: transparent;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            color: #666;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .tab-nav .tab-btn:hover {
+            color: #1e6f5c;
+        }
+
+        .tab-nav .tab-btn.active {
+            background: white;
+            color: #1e6f5c;
+            box-shadow: 0 2px 8px rgba(30, 111, 92, 0.15);
+        }
+
+        [data-theme="dark"] .tab-nav {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        [data-theme="dark"] .tab-nav .tab-btn {
+            color: #a0a0a0;
+        }
+
+        [data-theme="dark"] .tab-nav .tab-btn:hover {
+            color: #4ecdc4;
+        }
+
+        [data-theme="dark"] .tab-nav .tab-btn.active {
+            background: var(--card-bg);
+            color: #4ecdc4;
+            box-shadow: 0 2px 8px rgba(78, 205, 196, 0.2);
+        }
+
+        .list-container {
+            max-height: 280px;
+            overflow-y: auto;
+        }
+
+        .list-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background: rgba(30, 111, 92, 0.04);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .list-item:hover {
+            background: rgba(30, 111, 92, 0.1);
+            transform: translateX(4px);
+        }
+
+        [data-theme="dark"] .list-item {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        [data-theme="dark"] .list-item:hover {
+            background: rgba(78, 205, 196, 0.1);
+        }
+
+        .list-item .item-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .list-item .item-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .list-item .item-name {
+            font-weight: 500;
+            color: #333;
+            font-size: 14px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        [data-theme="dark"] .list-item .item-name {
+            color: #e0e0e0;
+        }
+
+        .list-item .item-meta {
+            font-size: 11px;
+            color: #999;
+            margin-top: 2px;
+        }
+
+        .list-item .item-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .list-item .action-icon {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: #999;
+            transition: all 0.3s ease;
+        }
+
+        .list-item .action-icon:hover {
+            background: rgba(255, 77, 79, 0.1);
+            color: #ff4d4f;
+        }
+
+        .list-item .action-icon.fav {
+            color: #faad14;
+        }
+
+        .list-item .action-icon.fav:hover {
+            background: rgba(250, 173, 20, 0.1);
+            color: #fa8c16;
+        }
+
+        .list-item .action-icon.navigate-btn {
+            color: #1e6f5c;
+        }
+
+        .list-item .action-icon.navigate-btn:hover {
+            background: rgba(30, 111, 92, 0.1);
+            color: #166b54;
+        }
+
+        [data-theme="dark"] .list-item .action-icon.navigate-btn {
+            color: #4ecdc4;
+        }
+
+        [data-theme="dark"] .list-item .action-icon.navigate-btn:hover {
+            background: rgba(78, 205, 196, 0.1);
+            color: #3dbdb5;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* 响应式优化 */
+        @media (max-width: 768px) {
+            .control-panel {
+                width: 100%;
+                position: fixed;
+                bottom: 0;
+                top: auto;
+                left: 0;
+                right: 0;
+                height: 60vh;
+                max-height: 500px;
+                border-radius: 20px 20px 0 0;
+                box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.15);
+                transform: translateY(calc(100% - 60px));
+                transition: transform 0.3s ease;
+                z-index: 100;
+            }
+
+            .control-panel.expanded {
+                transform: translateY(0);
+            }
+
+            .panel-header {
+                padding: 16px;
+                cursor: pointer;
+            }
+
+            .panel-header::after {
+                content: '';
+                display: block;
+                width: 40px;
+                height: 4px;
+                background: rgba(255, 255, 255, 0.3);
+                border-radius: 2px;
+                margin: 12px auto 0;
+            }
+
+            .map-container {
+                height: 100vh;
+            }
+
+            .top-right-toolbar {
+                top: auto;
+                bottom: 70vh;
+                right: 10px;
+                flex-direction: row;
+                flex-wrap: wrap;
+                max-width: 160px;
+            }
+
+            .toolbar-btn {
+                padding: 10px 12px;
+                font-size: 12px;
+            }
+
+            .toolbar-btn span {
+                display: none;
+            }
+
+            .map-legend {
+                bottom: 70vh;
+                right: 10px;
+                padding: 12px 14px;
+                min-width: auto;
+            }
+
+            .legend-title {
+                font-size: 13px;
+            }
+
+            .legend-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 6px 10px;
+            }
+
+            .legend-text {
+                font-size: 11px;
+            }
+
+            .theme-toggle {
+                top: 10px;
+                right: 10px;
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+            }
+        }
+    </style>
+    <script type="text/javascript">
+        window._AMapSecurityConfig = {
+            securityJsCode: '6b417232f85c191efea4e2cd4de04aa0'
+        };
+    </script>
+    <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=2b3e365222094e1ddd333c960f8073d9&plugin=AMap.Walking,AMap.HeatMap,AMap.Geolocation,AMap.GeometryUtil,AMap.Scale,AMap.ToolBar,AMap.HawkEye,AMap.Building"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 左侧控制面板 -->
+        <div class="control-panel">
+            <div class="panel-header">
+                <h1>
+                    <i class="fas fa-university"></i>
+                    云南师范大学
+                </h1>
+                <div class="subtitle">呈贡校区 · 智慧校园导航系统</div>
+            </div>
+
+            <div class="panel-content">
+                <!-- 信息查询 -->
+                <div class="section">
+                    <div class="section-title">
+                        <span><i class="fas fa-search"></i>地点查询</span>
+                        <button class="btn-icon" onclick="toggleManagePanel()">
+                            <i class="fas fa-cog"></i> 管理
+                        </button>
+                    </div>
+                    <div class="search-box">
+                        <select id="poiSelector">
+                            <option value="">-- 选择地点 --</option>
+                        </select>
+                        <button onclick="quickQueryPOI()">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                    <div class="info-detail" id="infoDetail">
+                        <div class="info-item">
+                            <span class="info-label">名称：</span>
+                            <span class="info-value" id="poiName">—</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">类型：</span>
+                            <span class="info-value" id="poiType">—</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">坐标：</span>
+                            <span class="info-value" id="poiCoord">—</span>
+                        </div>
+                        <button class="service-btn" id="serviceAreaBtn" style="display:none;" onclick="showServiceArea()">
+                            <i class="fas fa-bullseye"></i> 显示50米服务圈
+                        </button>
+                    </div>
+                    
+                    <!-- 食堂详情 -->
+                    <div class="canteen-detail" id="canteenDetail">
+                        <div class="canteen-title">
+                            <i class="fas fa-utensils"></i> 选择楼层
+                        </div>
+                        <div class="floor-selector" id="floorSelector"></div>
+                        <div class="stall-list" id="stallList"></div>
+                        <div class="action-btns">
+                            <button class="add-stall-btn" onclick="showAddStallForm()">
+                                <i class="fas fa-plus"></i> 添加档口
+                            </button>
+                            <button class="add-floor-btn" onclick="showAddFloorForm()">
+                                <i class="fas fa-building"></i> 添加楼层
+                            </button>
+                        </div>
+                        <div id="addFormArea"></div>
+                    </div>
+                </div>
+
+                <!-- 分类筛选 -->
+                <div class="section">
+                    <div class="section-title">
+                        <span><i class="fas fa-filter"></i>分类筛选</span>
+                    </div>
+                    <div class="category-filter">
+                        <div class="category-tags" id="categoryTags"></div>
+                    </div>
+                </div>
+
+                <!-- 收藏和历史 -->
+                <div class="section">
+                    <div class="tab-nav">
+                        <button class="tab-btn active" onclick="switchTab('favorites')">
+                            <i class="fas fa-star"></i> 收藏
+                        </button>
+                        <button class="tab-btn" onclick="switchTab('history')">
+                            <i class="fas fa-history"></i> 历史
+                        </button>
+                    </div>
+                    
+                    <!-- 收藏列表 -->
+                    <div class="tab-content active" id="favoritesTab">
+                        <div class="list-container" id="favoritesList">
+                            <div class="empty-state">
+                                <i class="fas fa-star-half-alt"></i>
+                                <p>暂无收藏</p>
+                                <p style="font-size:11px; margin-top:4px;">点击地图标记 ☆ 添加收藏</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 历史记录 -->
+                    <div class="tab-content" id="historyTab">
+                        <div class="list-container" id="historyList">
+                            <div class="empty-state">
+                                <i class="fas fa-clock"></i>
+                                <p>暂无访问记录</p>
+                                <p style="font-size:11px; margin-top:4px;">访问的地点会显示在这里</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 地点管理 -->
+                <div class="section manage-section" id="managePanel">
+                    <div class="manage-header">
+                        <div class="section-title" style="border:none; padding:0; margin:0;">
+                            <span><i class="fas fa-map-marker-alt"></i>我的地点</span>
+                        </div>
+                        <div class="manage-btns">
+                            <button class="btn-icon outline" onclick="exportData()">
+                                <i class="fas fa-download"></i> 导出
+                            </button>
+                            <button class="btn-icon outline" onclick="document.getElementById('importFile').click()">
+                                <i class="fas fa-upload"></i> 导入
+                            </button>
+                            <button class="btn-icon outline" onclick="toggleManagePanel()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(event)">
+                    <div class="poi-list" id="poiListContainer"></div>
+                    <button class="add-poi-btn" onclick="startPickCoord()">
+                        <i class="fas fa-plus-circle"></i> 新增地点
+                    </button>
+                    <div class="edit-form" id="editFormContainer"></div>
+                </div>
+
+                <!-- 路径规划 -->
+                <div class="section">
+                    <div class="section-title">
+                        <span><i class="fas fa-route"></i>步行导航</span>
+                    </div>
+                    <div class="input-group">
+                        <label><i class="fas fa-play-circle" style="color:#52c41a;"></i> 起点</label>
+                        <select id="startSelect">
+                            <option value="">-- 选择起点 --</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label><i class="fas fa-flag-checkered" style="color:#ff4d4f;"></i> 终点</label>
+                        <select id="endSelect">
+                            <option value="">-- 选择终点 --</option>
+                        </select>
+                    </div>
+                    <div class="route-actions">
+                        <button class="btn btn-primary" onclick="planRoute()">
+                            <i class="fas fa-directions"></i> 开始导航
+                        </button>
+                        <button class="btn btn-secondary" onclick="clearRoute()">
+                            <i class="fas fa-trash-alt"></i> 清除
+                        </button>
+                    </div>
+                    <div class="route-result" id="routeResult">
+                        <div class="result-summary">
+                            <div class="result-item">
+                                <div class="value" id="routeDistance">—</div>
+                                <div class="label">总距离</div>
+                            </div>
+                            <div class="result-item">
+                                <div class="value" id="routeTime">—</div>
+                                <div class="label">预计时间</div>
+                            </div>
+                        </div>
+                        <div class="result-steps" id="routeSteps"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-footer">
+                GIS智慧校园导航 · 地信23A班 · 云南师范大学
+            </div>
+        </div>
+
+        <!-- 地图区 -->
+        <div class="map-container">
+            <div id="map"></div>
+            
+            <!-- 工具栏 -->
+            <div class="top-right-toolbar">
+                <button class="toolbar-btn" id="heatmapBtn" onclick="toggleHeatmap()">
+                    <i class="fas fa-fire"></i> 热力图
+                </button>
+                <button class="toolbar-btn" onclick="locateUser()">
+                    <i class="fas fa-location-crosshairs"></i> 定位
+                </button>
+                <button class="toolbar-btn" id="measureBtn" onclick="toggleMeasure()">
+                    <i class="fas fa-ruler-combined"></i> 测距
+                </button>
+                <button class="toolbar-btn" onclick="resetView()">
+                    <i class="fas fa-home"></i> 重置视图
+                </button>
+            </div>
+
+            <!-- 图例 -->
+            <div class="map-legend" id="mapLegend">
+                <div class="legend-title">
+                    <i class="fas fa-layer-group"></i> POI类型图例
+                </div>
+                <div class="legend-grid">
+                    <div class="legend-item">
+                        <span class="legend-dot" style="background:#ff4d4f;"></span>
+                        <span class="legend-text">🍽️ 食堂</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot" style="background:#1e6f5c;"></span>
+                        <span class="legend-text">🏫 教学楼</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot" style="background:#722ed1;"></span>
+                        <span class="legend-text">🏠 宿舍</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot" style="background:#faad14;"></span>
+                        <span class="legend-text">📚 图书馆</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot" style="background:#52c41a;"></span>
+                        <span class="legend-text">⚽ 体育设施</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot" style="background:#1890ff;"></span>
+                        <span class="legend-text">🛒 便利店</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot" style="background:#eb2f96;"></span>
+                        <span class="legend-text">🏢 办公楼</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot" style="background:#13c2c2;"></span>
+                        <span class="legend-text">🏛️ 地标建筑</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot" style="background:#fa8c16;"></span>
+                        <span class="legend-text">🏥 医疗机构</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot" style="background:#8c8c8c;"></span>
+                        <span class="legend-text">🚪 校门</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+        <!-- 坐标拾取提示 -->
+    <div class="pick-hint" id="pickHint">
+        <i class="fas fa-crosshairs"></i> 请在地图上点击选择位置
+    </div>
+
+    <!-- 深色模式切换按钮 -->
+    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="切换深色模式">
+        <i class="fas fa-moon" id="themeIcon"></i>
+    </button>
+
+    <script>
+        (function () {
+            "use strict";
+            let map, walking;
+            let currentMarkers = [];
+            let currentInfoWindow = null;
+            let userLocation = null;
+            let heatmap = null;
+            let heatmapVisible = false;
+            let serviceCircle = null;
+            let currentServicePOI = null;
+            let currentCanteen = null;
+            let currentFloorIndex = -1;
+            let isPickingCoord = false;
+            let tempCoord = null;
+            let activeCategory = 'all';
+            let isMeasuring = false;
+            let measurePoints = [];
+            let measureMarkers = [];
+            let measurePolyline = null;
+            let measureInfoWindow = null;
+
+            // 收藏和历史记录
+            let favorites = [];
+            let history = [];
+            const MAX_HISTORY = 20;
+
+            // 深色模式
+            function initTheme() {
+                const saved = localStorage.getItem('ynnu_theme');
+                if (saved === 'dark') {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    document.getElementById('themeIcon').className = 'fas fa-sun';
+                }
+            }
+
+            window.toggleTheme = function () {
+                const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                if (isDark) {
+                    document.documentElement.removeAttribute('data-theme');
+                    document.getElementById('themeIcon').className = 'fas fa-moon';
+                    localStorage.setItem('ynnu_theme', 'light');
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    document.getElementById('themeIcon').className = 'fas fa-sun';
+                    localStorage.setItem('ynnu_theme', 'dark');
+                }
+            };
+
+            // Tab切换
+            window.switchTab = function (tab) {
+                document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                event.target.closest('.tab-btn').classList.add('active');
+                document.getElementById(tab + 'Tab').classList.add('active');
+            };
+
+            // 收藏功能
+            function loadFavorites() {
+                const stored = localStorage.getItem('ynnu_favorites');
+                favorites = stored ? JSON.parse(stored) : [];
+                renderFavorites();
+            }
+
+            function saveFavorites() {
+                localStorage.setItem('ynnu_favorites', JSON.stringify(favorites));
+            }
+
+            window.toggleFavorite = function (poiName) {
+                const index = favorites.findIndex(f => f.name === poiName);
+                if (index >= 0) {
+                    favorites.splice(index, 1);
+                    showToast('已取消收藏', 'info');
+                } else {
+                    const poi = campusPOIs.find(p => p.name === poiName);
+                    if (poi) {
+                        const config = typeConfig[poi.type] || typeConfig.other;
+                        favorites.push({
+                            name: poi.name,
+                            type: poi.type,
+                            icon: config.icon,
+                            color: config.color
+                        });
+                        showToast('已添加到收藏', 'success');
+                    }
+                }
+                saveFavorites();
+                renderFavorites();
+                updateMarkerFavoriteState(poiName);
+            };
+
+            window.isFavorite = function (name) {
+                return favorites.some(f => f.name === name);
+            };
+
+            function renderFavorites() {
+                const container = document.getElementById('favoritesList');
+                if (favorites.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-star-half-alt"></i>
+                            <p>暂无收藏</p>
+                            <p style="font-size:11px; margin-top:4px;">点击地图标记 ☆ 添加收藏</p>
+                        </div>`;
+                    return;
+                }
+
+                let html = '';
+                favorites.forEach(f => {
+                    html += `
+                        <div class="list-item" onclick="navigateToPOI('${f.name}')">
+                            <div class="item-icon" style="background:${f.color}20; color:${f.color};">
+                                ${f.icon}
+                            </div>
+                            <div class="item-info">
+                                <div class="item-name">${f.name}</div>
+                            </div>
+                            <div class="item-actions">
+                                <button class="action-icon navigate-btn" onclick="event.stopPropagation(); navigateToPOI('${f.name}')" title="导航">
+                                    <i class="fas fa-route"></i>
+                                </button>
+                                <button class="action-icon" onclick="event.stopPropagation(); toggleFavorite('${f.name}')" title="取消收藏">
+                                    <i class="fas fa-star" style="color:#faad14;"></i>
+                                </button>
+                            </div>
+                        </div>`;
+                });
+                container.innerHTML = html;
+            }
+
+            // 历史记录功能
+            function loadHistory() {
+                const stored = localStorage.getItem('ynnu_history');
+                history = stored ? JSON.parse(stored) : [];
+                renderHistory();
+            }
+
+            function saveHistory() {
+                localStorage.setItem('ynnu_history', JSON.stringify(history));
+            }
+
+            window.addToHistory = function (poiName) {
+                // 移除已存在的
+                history = history.filter(h => h.name !== poiName);
+                const poi = campusPOIs.find(p => p.name === poiName);
+                if (!poi) return;
+                const config = typeConfig[poi.type] || typeConfig.other;
+                // 添加到开头
+                history.unshift({
+                    name: poi.name,
+                    type: poi.type,
+                    icon: config.icon,
+                    color: config.color,
+                    time: new Date().toLocaleString('zh-CN')
+                });
+                // 限制数量
+                if (history.length > MAX_HISTORY) {
+                    history = history.slice(0, MAX_HISTORY);
+                }
+                saveHistory();
+                renderHistory();
+            };
+
+            function renderHistory() {
+                const container = document.getElementById('historyList');
+                if (history.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-clock"></i>
+                            <p>暂无访问记录</p>
+                            <p style="font-size:11px; margin-top:4px;">访问的地点会显示在这里</p>
+                        </div>`;
+                    return;
+                }
+
+                let html = '';
+                history.forEach(h => {
+                    html += `
+                        <div class="list-item" onclick="navigateToPOI('${h.name}')">
+                            <div class="item-icon" style="background:${h.color}20; color:${h.color};">
+                                ${h.icon}
+                            </div>
+                            <div class="item-info">
+                                <div class="item-name">${h.name}</div>
+                                <div class="item-meta">${h.time}</div>
+                            </div>
+                            <div class="item-actions">
+                                <button class="action-icon navigate-btn" onclick="event.stopPropagation(); navigateToPOI('${h.name}')" title="导航">
+                                    <i class="fas fa-route"></i>
+                                </button>
+                                <button class="action-icon" onclick="event.stopPropagation(); removeFromHistory('${h.name}')" title="删除">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        </div>`;
+                });
+                container.innerHTML = html;
+            }
+
+            window.removeFromHistory = function (poiName) {
+                history = history.filter(h => h.name !== poiName);
+                saveHistory();
+                renderHistory();
+            };
+
+            window.clearHistory = function () {
+                if (!confirm('确定清空所有历史记录？')) return;
+                history = [];
+                saveHistory();
+                renderHistory();
+                showToast('历史已清空', 'info');
+            };
+
+            // 导航到POI
+            window.navigateToPOI = function (name) {
+                const poi = campusPOIs.find(p => p.name === name);
+                if (poi) {
+                    showPOIInfo(poi);
+                    map.setCenter(poi.coord);
+                    map.setZoom(18);
+                    addToHistory(name);
+                }
+            };
+
+            // Toast提示
+            function showToast(msg, type = 'info') {
+                let container = document.querySelector('.toast-container');
+                if (!container) {
+                    container = document.createElement('div');
+                    container.className = 'toast-container';
+                    document.body.appendChild(container);
+                }
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-times-circle' : 'fa-info-circle'}"></i> ${msg}`;
+                container.appendChild(toast);
+                setTimeout(() => {
+                    toast.classList.add('toast-exit');
+                    setTimeout(() => toast.remove(), 300);
+                }, 2000);
+            }
+
+            // 更新标记的收藏状态
+            function updateMarkerFavoriteState(name) {
+                // 重新渲染标记
+            }
+
+            // 默认POI数据
+            const defaultPOIs = [
+                {id:"poi_001",name:"西区一栋宿舍",coord:[102.844687,24.861799],color:"#722ed1",type:"dorm"},
+                {id:"poi_002",name:"西区二栋宿舍",coord:[102.844917,24.861037],color:"#722ed1",type:"dorm"},
+                {id:"poi_003",name:"西区三栋宿舍",coord:[102.845327,24.86065],color:"#722ed1",type:"dorm"},
+                {id:"poi_004",name:"西区四栋宿舍",coord:[102.845883,24.861461],color:"#722ed1",type:"dorm"},
+                {id:"poi_005",name:"西区食堂",coord:[102.846127,24.862112],color:"#ff4d4f",type:"canteen",floors:[]},
+                {id:"poi_006",name:"汇文楼一区",coord:[102.8477,24.858769],color:"#1e6f5c",type:"teaching"},
+                {id:"poi_007",name:"汇文楼二区",coord:[102.847368,24.8593],color:"#1e6f5c",type:"teaching"},
+                {id:"poi_008",name:"汇文楼三区",coord:[102.847371,24.860103],color:"#1e6f5c",type:"teaching"},
+                {id:"poi_009",name:"汇文楼四区",coord:[102.847356,24.860681],color:"#1e6f5c",type:"teaching"},
+                {id:"poi_010",name:"汇学一号楼",coord:[102.853624,24.859675],color:"#1e6f5c",type:"teaching"},
+                {id:"poi_011",name:"汇学二号楼",coord:[102.852838,24.859707],color:"#1e6f5c",type:"teaching"},
+                {id:"poi_012",name:"汇学三号楼",coord:[102.853076,24.860754],color:"#1e6f5c",type:"teaching"},
+                {id:"poi_013",name:"汇学四号楼",coord:[102.852383,24.860707],color:"#1e6f5c",type:"teaching"},
+                {id:"poi_014",name:"外国语学院",coord:[102.851977,24.861637],color:"#1e6f5c",type:"teaching"},
+                {id:"poi_015",name:"经济学院",coord:[102.850881,24.861222],color:"#1e6f5c",type:"teaching"},
+                {id:"poi_016",name:"同析一号楼",coord:[102.856131,24.860174],color:"#1e6f5c",type:"teaching"},
+                {id:"poi_017",name:"同析二号楼",coord:[102.857048,24.860604],color:"#1e6f5c",type:"teaching"},
+                {id:"poi_018",name:"同析三号楼",coord:[102.856324,24.861438],color:"#1e6f5c",type:"teaching"},
+                {id:"poi_019",name:"同析四号楼",coord:[102.856619,24.861896],color:"#1e6f5c",type:"teaching"},
+                {id:"poi_020",name:"图书馆",coord:[102.854209,24.861888],color:"#faad14",type:"library"},
+                {id:"poi_021",name:"地理学部",coord:[102.854787,24.863922],color:"#1e6f5c",type:"teaching"},
+                {id:"poi_022",name:"艺术学院",coord:[102.8546,24.864504],color:"#1e6f5c",type:"teaching"},
+                {id:"poi_023",name:"美术学院",coord:[102.854706,24.864757],color:"#1e6f5c",type:"teaching"},
+                {id:"poi_024",name:"体育学院",coord:[102.855251,24.864796],color:"#52c41a",type:"sports"},
+                {id:"poi_025",name:"文华学院",coord:[102.856139,24.864893],color:"#1e6f5c",type:"teaching"},
+                {id:"poi_026",name:"信息学院",coord:[102.856002,24.863905],color:"#1e6f5c",type:"teaching"},
+                {id:"poi_027",name:"校医院",coord:[102.8535,24.863],color:"#fa8c16",type:"medical"},
+                {id:"poi_028",name:"超市",coord:[102.8465,24.8625],color:"#1890ff",type:"shop"}
+            ];
+            let campusPOIs = [];
+
+            // 类型配置
+            const typeConfig = {
+                canteen: { icon: '🍽️', name: '食堂', color: '#ff4d4f' },
+                teaching: { icon: '🏫', name: '教学楼', color: '#1e6f5c' },
+                dorm: { icon: '🏠', name: '宿舍', color: '#722ed1' },
+                library: { icon: '📚', name: '图书馆', color: '#faad14' },
+                sports: { icon: '⚽', name: '体育设施', color: '#52c41a' },
+                shop: { icon: '🛒', name: '便利店', color: '#1890ff' },
+                office: { icon: '🏢', name: '办公楼', color: '#eb2f96' },
+                medical: { icon: '🏥', name: '医疗机构', color: '#fa8c16' },
+                landmark: { icon: '🏛️', name: '地标建筑', color: '#13c2c2' },
+                gate: { icon: '🚪', name: '校门', color: '#8c8c8c' },
+                other: { icon: '📍', name: '其他', color: '#722ed1' }
+            };
+
+            // 颜色加深
+            function shadeColor(color, percent) {
+                let R = parseInt(color.substring(1, 3), 16);
+                let G = parseInt(color.substring(3, 5), 16);
+                let B = parseInt(color.substring(5, 7), 16);
+                R = Math.max(0, Math.min(255, Math.round(R * (100 + percent) / 100)));
+                G = Math.max(0, Math.min(255, Math.round(G * (100 + percent) / 100)));
+                B = Math.max(0, Math.min(255, Math.round(B * (100 + percent) / 100)));
+                return "#" + [R, G, B].map(x => x.toString(16).padStart(2, '0')).join('');
+            }
+
+            // 创建图标
+            function createMarkerIcon(color, emoji) {
+                const canvas = document.createElement('canvas');
+                canvas.width = 32;
+                canvas.height = 40;
+                const ctx = canvas.getContext('2d');
+                
+                // 阴影
+                ctx.shadowColor = 'rgba(0,0,0,0.3)';
+                ctx.shadowBlur = 4;
+                ctx.shadowOffsetY = 2;
+                
+                // 底部三角
+                ctx.beginPath();
+                ctx.moveTo(16, 40);
+                ctx.lineTo(6, 24);
+                ctx.lineTo(26, 24);
+                ctx.closePath();
+                ctx.fillStyle = color;
+                ctx.fill();
+                
+                // 圆形
+                ctx.shadowColor = 'transparent';
+                ctx.beginPath();
+                ctx.arc(16, 14, 12, 0, 2 * Math.PI);
+                const gradient = ctx.createRadialGradient(16, 10, 2, 16, 14, 12);
+                gradient.addColorStop(0, shadeColor(color, 20));
+                gradient.addColorStop(1, color);
+                ctx.fillStyle = gradient;
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Emoji
+                ctx.font = '14px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(emoji, 16, 14);
+                
+                return canvas.toDataURL();
+            }
+
+            function getPOIMarkerIcon(poi) {
+                const config = typeConfig[poi.type] || typeConfig.other;
+                return createMarkerIcon(config.color, config.icon);
+            }
+
+            // 数据持久化
+            function loadPOIs() {
+                const stored = localStorage.getItem('campusPOIs_v2');
+                if (stored) {
+                    try { 
+                        campusPOIs = JSON.parse(stored); 
+                        campusPOIs.forEach(p => {
+                            if (!p.id) p.id = 'poi_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+                            if (!p.type) p.type = 'other';
+                            if (p.type === 'canteen' && !p.floors) p.floors = [];
+                        });
+                    } catch (e) { campusPOIs = [...defaultPOIs]; }
+                } else {
+                    campusPOIs = [...defaultPOIs];
+                }
+                savePOIs();
+            }
+
+            function savePOIs() { 
+                localStorage.setItem('campusPOIs_v2', JSON.stringify(campusPOIs)); 
+            }
+
+            // 导出导入
+            window.exportData = function () {
+                const dataStr = JSON.stringify(campusPOIs, null, 2);
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `ynnu_pois_${new Date().toISOString().slice(0,10)}.json`;
+                a.click();
+            };
+
+            window.importData = function (e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = function (ev) {
+                    try {
+                        const data = JSON.parse(ev.target.result);
+                        if (!confirm('导入将替换当前所有地点，确定吗？')) return;
+                        campusPOIs = data;
+                        savePOIs();
+                        refreshAllMarkers();
+                        populateSelectors();
+                        renderCategoryTags();
+                        renderPOIList();
+                        alert('导入成功！共导入 ' + campusPOIs.length + ' 个地点');
+                    } catch (ex) { alert('文件格式错误'); }
+                    e.target.value = '';
+                };
+                reader.readAsText(file);
+            };
+
+            // 标记管理
+            function refreshAllMarkers() {
+                currentMarkers.forEach(m => m.setMap(null));
+                currentMarkers = [];
+                
+                const poisToShow = activeCategory === 'all' 
+                    ? campusPOIs 
+                    : campusPOIs.filter(p => p.type === activeCategory);
+                
+                poisToShow.forEach(poi => {
+                    const iconUrl = getPOIMarkerIcon(poi);
+                    const marker = new AMap.Marker({
+                        position: poi.coord,
+                        title: poi.name,
+                        icon: new AMap.Icon({
+                            size: new AMap.Size(32, 40),
+                            image: iconUrl,
+                            imageSize: new AMap.Size(32, 40)
+                        }),
+                        offset: new AMap.Pixel(-16, -40)
+                    });
+                    marker.on('click', () => showPOIInfo(poi));
+                    marker.setMap(map);
+                    currentMarkers.push(marker);
+                });
+            }
+
+            function showPOIInfo(poi) {
+                if (currentInfoWindow) currentInfoWindow.close();
+                
+                const config = typeConfig[poi.type] || typeConfig.other;
+                const isFav = isFavorite(poi.name);
+                document.getElementById('poiName').innerText = poi.name;
+                document.getElementById('poiType').innerText = config.icon + ' ' + config.name;
+                document.getElementById('poiCoord').innerText = poi.coord[0].toFixed(5) + ', ' + poi.coord[1].toFixed(5);
+                document.getElementById('serviceAreaBtn').style.display = 'inline-flex';
+                currentServicePOI = poi;
+                
+                // 添加到历史记录
+                addToHistory(poi.name);
+                
+                const favIcon = isFav ? 'fa-star' : 'fa-star-half-alt';
+                const favStyle = isFav ? 'color:#faad14;' : 'color:#999;';
+                
+                const content = `
+                    <div style="padding:10px; min-width:200px;">
+                        <div style="font-weight:600; font-size:15px; margin-bottom:8px; color:#1e6f5c; display:flex; align-items:center; gap:8px;">
+                            ${config.icon} ${poi.name}
+                            <button onclick="toggleFavorite('${poi.name}')" style="background:none; border:none; cursor:pointer; font-size:16px; padding:0;">
+                                <i class="fas ${favIcon}" style="${favStyle}"></i>
+                            </button>
+                        </div>
+                        <div style="font-size:12px; color:#666; margin-bottom:4px;">
+                            ${config.name}
+                        </div>
+                        <div style="font-size:11px; color:#999;">
+                            坐标: ${poi.coord[0].toFixed(5)}, ${poi.coord[1].toFixed(5)}
+                        </div>
+                        <div style="margin-top:10px; display:flex; gap:6px;">
+                            <button onclick="navigateToPOI('${poi.name}')" style="flex:1; padding:6px 10px; background:#1e6f5c; color:white; border:none; border-radius:6px; cursor:pointer; font-size:12px;">
+                                <i class="fas fa-route"></i> 导航
+                            </button>
+                        </div>
+                    </div>
+                `;
+                currentInfoWindow = new AMap.InfoWindow({ content, offset: [0, -40] });
+                currentInfoWindow.open(map, poi.coord);
+                
+                if (poi.type === 'canteen') {
+                    currentCanteen = poi;
+                    document.getElementById('canteenDetail').style.display = 'block';
+                    renderFloorSelector(poi);
+                } else {
+                    document.getElementById('canteenDetail').style.display = 'none';
+                    currentCanteen = null;
+                }
+            }
+
+            // 食堂楼层管理
+            function renderFloorSelector(poi) {
+                const container = document.getElementById('floorSelector');
+                const floors = poi.floors || [];
+                
+                if (floors.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><i class="fas fa-layer-group"></i><p>暂无楼层，请添加</p></div>';
+                    document.getElementById('stallList').innerHTML = '';
+                    return;
+                }
+                
+                let html = '';
+                floors.forEach((floor, index) => {
+                    const active = index === currentFloorIndex ? 'active' : '';
+                    html += `<button class="floor-btn ${active}" onclick="selectFloor(${index})">${floor.name}</button>`;
+                });
+                container.innerHTML = html;
+                
+                if (currentFloorIndex < 0 || currentFloorIndex >= floors.length) {
+                    currentFloorIndex = 0;
+                    renderFloorSelector(poi);
+                }
+            }
+
+            window.selectFloor = function (index) {
+                currentFloorIndex = index;
+                renderFloorSelector(currentCanteen);
+                renderStallList();
+            };
+
+            function renderStallList() {
+                const container = document.getElementById('stallList');
+                const floors = currentCanteen.floors || [];
+                
+                if (currentFloorIndex < 0 || currentFloorIndex >= floors.length) {
+                    container.innerHTML = '';
+                    return;
+                }
+                
+                const stalls = floors[currentFloorIndex].stalls || [];
+                
+                if (stalls.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><i class="fas fa-utensils"></i><p>该楼层暂无档口</p></div>';
+                    return;
+                }
+                
+                let html = '';
+                stalls.forEach((stall, index) => {
+                    const tags = stall.tags ? stall.tags.join('、') : '';
+                    html += `
+                        <div class="stall-item">
+                            <div class="stall-info">
+                                <div class="stall-name">${stall.name}</div>
+                                ${tags ? `<div class="stall-tags">${tags}</div>` : ''}
+                            </div>
+                            <button class="stall-delete" onclick="deleteStall(${index})">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            }
+
+            window.showAddStallForm = function () {
+                if (!currentCanteen || currentCanteen.floors.length === 0) {
+                    alert('请先添加楼层');
+                    return;
+                }
+                const formArea = document.getElementById('addFormArea');
+                formArea.innerHTML = `
+                    <div class="add-form">
+                        <input id="stallName" placeholder="档口名称">
+                        <input id="stallTags" placeholder="标签（用逗号分隔）">
+                        <div class="form-btns">
+                            <button class="save-btn" onclick="saveStall()">保存</button>
+                            <button class="cancel-btn" onclick="cancelAddForm()">取消</button>
+                        </div>
+                    </div>
+                `;
+            };
+
+            window.saveStall = function () {
+                const name = document.getElementById('stallName').value.trim();
+                const tagsStr = document.getElementById('stallTags').value.trim();
+                if (!name) return alert('请输入档口名称');
+                
+                const tags = tagsStr ? tagsStr.split(',').map(t => t.trim()).filter(t => t) : [];
+                const stall = { name, tags };
+                
+                const poiIndex = campusPOIs.findIndex(p => p.id === currentCanteen.id);
+                if (poiIndex >= 0) {
+                    campusPOIs[poiIndex].floors[currentFloorIndex].stalls.push(stall);
+                    currentCanteen = campusPOIs[poiIndex];
+                    savePOIs();
+                    renderStallList();
+                    document.getElementById('addFormArea').innerHTML = '';
+                }
+            };
+
+            window.deleteStall = function (index) {
+                if (!confirm('确定删除该档口？')) return;
+                const poiIndex = campusPOIs.findIndex(p => p.id === currentCanteen.id);
+                if (poiIndex >= 0) {
+                    campusPOIs[poiIndex].floors[currentFloorIndex].stalls.splice(index, 1);
+                    currentCanteen = campusPOIs[poiIndex];
+                    savePOIs();
+                    renderStallList();
+                }
+            };
+
+            window.showAddFloorForm = function () {
+                const formArea = document.getElementById('addFormArea');
+                formArea.innerHTML = `
+                    <div class="add-form">
+                        <input id="floorName" placeholder="楼层名称（如：1楼、2楼、B1层）">
+                        <div class="form-btns">
+                            <button class="save-btn" onclick="saveFloor()">保存</button>
+                            <button class="cancel-btn" onclick="cancelAddForm()">取消</button>
+                        </div>
+                    </div>
+                `;
+            };
+
+            window.saveFloor = function () {
+                const name = document.getElementById('floorName').value.trim();
+                if (!name) return alert('请输入楼层名称');
+                
+                const floor = { name, stalls: [] };
+                
+                const poiIndex = campusPOIs.findIndex(p => p.id === currentCanteen.id);
+                if (poiIndex >= 0) {
+                    campusPOIs[poiIndex].floors.push(floor);
+                    currentCanteen = campusPOIs[poiIndex];
+                    currentFloorIndex = campusPOIs[poiIndex].floors.length - 1;
+                    savePOIs();
+                    renderFloorSelector(currentCanteen);
+                    renderStallList();
+                    document.getElementById('addFormArea').innerHTML = '';
+                }
+            };
+
+            window.cancelAddForm = function () {
+                document.getElementById('addFormArea').innerHTML = '';
+            };
+
+            // 分类筛选
+            function renderCategoryTags() {
+                const container = document.getElementById('categoryTags');
+                const types = Object.entries(typeConfig).filter(([key]) => key !== 'other');
+                const countByType = {};
+                campusPOIs.forEach(p => {
+                    countByType[p.type] = (countByType[p.type] || 0) + 1;
+                });
+                
+                let html = `<button class="category-tag ${activeCategory === 'all' ? 'active' : ''}" onclick="filterByCategory('all')">
+                    <i class="fas fa-globe"></i> 全部 (${campusPOIs.length})
+                </button>`;
+                
+                types.forEach(([key, config]) => {
+                    const count = countByType[key] || 0;
+                    if (count > 0) {
+                        html += `<button class="category-tag ${activeCategory === key ? 'active' : ''}" onclick="filterByCategory('${key}')">
+                            ${config.icon} ${config.name} (${count})
+                        </button>`;
+                    }
+                });
+                
+                container.innerHTML = html;
+            }
+
+            window.filterByCategory = function (type) {
+                activeCategory = type;
+                renderCategoryTags();
+                refreshAllMarkers();
+            };
+
+            // 服务区
+            window.showServiceArea = function () {
+                if (!currentServicePOI) return;
+                if (serviceCircle) serviceCircle.setMap(null);
+                serviceCircle = new AMap.Circle({
+                    center: currentServicePOI.coord,
+                    radius: 50,
+                    strokeColor: "#1e6f5c",
+                    strokeWeight: 2,
+                    strokeOpacity: 0.8,
+                    fillColor: "#1e6f5c",
+                    fillOpacity: 0.2
+                });
+                serviceCircle.setMap(map);
+                map.setFitView([serviceCircle]);
+            };
+
+            // 热力图
+            window.toggleHeatmap = function () {
+                heatmapVisible = !heatmapVisible;
+                const btn = document.getElementById('heatmapBtn');
+                if (heatmapVisible) {
+                    btn.classList.add('active');
+                    const data = campusPOIs.map(p => ({ lng: p.coord[0], lat: p.coord[1], count: 1 }));
+                    if (data.length === 0) { alert('暂无地点数据'); btn.classList.remove('active'); return; }
+                    heatmap = new AMap.HeatMap(map, {
+                        radius: 50, opacity: [0, 0.8],
+                        gradient: { 0.2: 'blue', 0.4: 'cyan', 0.6: 'lime', 0.8: 'yellow', 1: 'red' }
+                    });
+                    heatmap.setDataSet({ data, max: 5 });
+                } else {
+                    btn.classList.remove('active');
+                    if (heatmap) { heatmap.setMap(null); heatmap = null; }
+                }
+            };
+
+            // 选择器填充
+            function populateSelectors() {
+                const sorted = [...campusPOIs].sort((a, b) => a.name.localeCompare(b.name, 'zh'));
+                
+                ['poiSelector', 'endSelect'].forEach(id => {
+                    const sel = document.getElementById(id);
+                    if (!sel) return;
+                    sel.innerHTML = '<option value="">-- 选择 --</option>';
+                    sorted.forEach(p => {
+                        const config = typeConfig[p.type] || typeConfig.other;
+                        sel.appendChild(new Option(`${config.icon} ${p.name}`, p.name));
+                    });
+                });
+                
+                const startSel = document.getElementById('startSelect');
+                startSel.innerHTML = '<option value="">-- 选择起点 --</option>';
+                const locOpt = document.createElement('option');
+                locOpt.value = '__LOC__';
+                locOpt.text = '📍 我的位置';
+                startSel.appendChild(locOpt);
+                sorted.forEach(p => {
+                    const config = typeConfig[p.type] || typeConfig.other;
+                    startSel.appendChild(new Option(`${config.icon} ${p.name}`, p.name));
+                });
+            }
+
+            window.quickQueryPOI = function () {
+                const name = document.getElementById('poiSelector').value;
+                if (!name) return;
+                const poi = campusPOIs.find(p => p.name === name);
+                if (poi) {
+                    showPOIInfo(poi);
+                    map.setCenter(poi.coord);
+                    map.setZoom(17);
+                }
+            };
+
+            // 导航
+            window.planRoute = function () {
+                const sName = document.getElementById('startSelect').value;
+                const eName = document.getElementById('endSelect').value;
+                if (!sName || !eName) return alert('请选择起终点');
+                
+                let startCoord;
+                if (sName === '__LOC__') {
+                    if (!userLocation) return alert('请先定位');
+                    startCoord = userLocation;
+                } else {
+                    const sp = campusPOIs.find(p => p.name === sName);
+                    if (!sp) return;
+                    startCoord = sp.coord;
+                }
+                
+                const ep = campusPOIs.find(p => p.name === eName);
+                if (!ep) return;
+                
+                clearRoute(false);
+                walking.search(startCoord, ep.coord, (status, result) => {
+                    if (status === 'complete') {
+                        const r = result.routes[0];
+                        document.getElementById('routeDistance').innerText = (r.distance / 1000).toFixed(2) + '公里';
+                        document.getElementById('routeTime').innerText = Math.round(r.time / 60) + '分钟';
+                        let steps = '';
+                        r.steps.forEach((s, i) => {
+                            steps += `<div class="step"><span class="step-num">${i + 1}</span><span class="step-text">${s.instruction}</span></div>`;
+                        });
+                        document.getElementById('routeSteps').innerHTML = steps;
+                        document.getElementById('routeResult').classList.add('show');
+                    } else alert('规划失败');
+                });
+            };
+
+            window.clearRoute = function () {
+                walking.clear();
+                refreshAllMarkers();
+                document.getElementById('routeResult').classList.remove('show');
+            };
+
+            // 定位
+            window.locateUser = function () {
+                AMap.plugin('AMap.Geolocation', function () {
+                    new AMap.Geolocation({ enableHighAccuracy: true }).getCurrentPosition((status, result) => {
+                        if (status === 'complete') {
+                            userLocation = [result.position.lng, result.position.lat];
+                            map.setCenter(userLocation);
+                            new AMap.Marker({
+                                position: userLocation,
+                                icon: new AMap.Icon({ 
+                                    size: new AMap.Size(24, 34), 
+                                    image: 'https://webapi.amap.com/theme/v1.3/markers/n/mark_r.png', 
+                                    imageSize: new AMap.Size(24, 34) 
+                                })
+                            }).setMap(map);
+                            alert('定位成功');
+                        } else alert('定位失败');
+                    });
+                });
+            };
+
+            // 测距
+            window.toggleMeasure = function () {
+                isMeasuring = !isMeasuring;
+                document.getElementById('measureBtn').classList.toggle('active', isMeasuring);
+                if (!isMeasuring) clearMeasure();
+            };
+
+            function clearMeasure() {
+                if (measurePolyline) { measurePolyline.setMap(null); measurePolyline = null; }
+                measureMarkers.forEach(m => m.setMap(null));
+                measureMarkers = [];
+                if (measureInfoWindow) { measureInfoWindow.close(); measureInfoWindow = null; }
+                measurePoints = [];
+            }
+
+            function addMeasurePoint(lnglat) {
+                const pt = [lnglat.getLng(), lnglat.getLat()];
+                measurePoints.push(pt);
+                const m = new AMap.Marker({
+                    position: pt,
+                    icon: new AMap.Icon({ size: new AMap.Size(12, 12), image: 'https://webapi.amap.com/theme/v1.3/markers/n/mark_bs.png', imageSize: new AMap.Size(12, 12) })
+                });
+                m.setMap(map);
+                measureMarkers.push(m);
+                
+                if (measurePoints.length >= 2) {
+                    if (measurePolyline) measurePolyline.setMap(null);
+                    measurePolyline = new AMap.Polyline({ path: measurePoints, strokeColor: '#FF33FF', strokeWeight: 5 });
+                    measurePolyline.setMap(map);
+                    
+                    let total = 0;
+                    for (let i = 1; i < measurePoints.length; i++) {
+                        total += AMap.GeometryUtil.distance(measurePoints[i - 1], measurePoints[i]);
+                    }
+                    
+                    if (measureInfoWindow) measureInfoWindow.close();
+                    measureInfoWindow = new AMap.InfoWindow({
+                        content: `<div style="padding:8px; background:white; border-radius:6px;">距离: <b>${total.toFixed(0)}米</b></div>`,
+                        offset: [0, -20]
+                    });
+                    measureInfoWindow.open(map, pt);
+                }
+            }
+
+            window.resetView = function () {
+                map.setCenter([102.85334, 24.861581]);
+                map.setZoom(16);
+            };
+
+            // 地图点击
+            function mapClick(e) {
+                if (isPickingCoord) {
+                    tempCoord = [e.lnglat.getLng(), e.lnglat.getLat()];
+                    showAddFormWithCoord(tempCoord[0], tempCoord[1]);
+                    isPickingCoord = false;
+                    document.getElementById('pickHint').classList.remove('show');
+                } else if (isMeasuring) {
+                    addMeasurePoint(e.lnglat);
+                } else {
+                    if (currentInfoWindow) currentInfoWindow.close();
+                    const coord = [e.lnglat.getLng(), e.lnglat.getLat()];
+                    const content = `
+                        <div style="padding:10px;">
+                            <div style="font-size:12px; color:#666; margin-bottom:8px;">
+                                坐标: ${coord[0].toFixed(5)}, ${coord[1].toFixed(5)}
+                            </div>
+                            <button onclick="navigateToCoord([${coord[0]},${coord[1]}])" style="background:#1e6f5c; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px;">
+                                导航到这里
+                            </button>
+                        </div>
+                    `;
+                    currentInfoWindow = new AMap.InfoWindow({ content, offset: [0, -20] });
+                    currentInfoWindow.open(map, e.lnglat);
+                }
+            }
+
+            window.navigateToCoord = function (coord) {
+                if (!userLocation) return alert('请先定位');
+                clearRoute();
+                walking.search(userLocation, coord, (status, result) => {
+                    if (status === 'complete') {
+                        const r = result.routes[0];
+                        document.getElementById('routeDistance').innerText = (r.distance / 1000).toFixed(2) + '公里';
+                        document.getElementById('routeTime').innerText = Math.round(r.time / 60) + '分钟';
+                        document.getElementById('routeResult').classList.add('show');
+                    }
+                });
+            };
+
+            // 新增地点
+            window.startPickCoord = function () {
+                isPickingCoord = true;
+                document.getElementById('pickHint').classList.add('show');
+                document.getElementById('editFormContainer').classList.add('show');
+            };
+
+            function showAddFormWithCoord(lng, lat) {
+                const container = document.getElementById('editFormContainer');
+                
+                let typeOptions = '';
+                Object.entries(typeConfig).forEach(([key, config]) => {
+                    typeOptions += `<option value="${key}">${config.icon} ${config.name}</option>`;
+                });
+                
+                container.innerHTML = `
+                    <label><i class="fas fa-map-marker-alt"></i> 地点名称</label>
+                    <input id="editName" placeholder="请输入地点名称">
+                    <label><i class="fas fa-tag"></i> 地点类型</label>
+                    <select id="editType">${typeOptions}</select>
+                    <div class="coord-display">
+                        <i class="fas fa-crosshairs"></i> 
+                        经度: ${lng.toFixed(6)} | 纬度: ${lat.toFixed(6)}
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn btn-primary" onclick="saveNewPOI(${lng},${lat})">
+                            <i class="fas fa-check"></i> 保存
+                        </button>
+                        <button class="btn btn-secondary" onclick="closeEditForm()">
+                            取消
+                        </button>
+                    </div>
+                `;
+            }
+
+            window.saveNewPOI = function (lng, lat) {
+                const name = document.getElementById('editName').value.trim();
+                const type = document.getElementById('editType').value;
+                if (!name) return alert('请输入地点名称');
+                
+                if (campusPOIs.some(p => p.name === name)) {
+                    return alert('已存在同名地点');
+                }
+                
+                const id = 'poi_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+                const config = typeConfig[type] || typeConfig.other;
+                
+                campusPOIs.push({
+                    id,
+                    name,
+                    coord: [lng, lat],
+                    color: config.color,
+                    type,
+                    floors: type === 'canteen' ? [] : undefined
+                });
+                
+                savePOIs();
+                refreshAllMarkers();
+                populateSelectors();
+                renderCategoryTags();
+                renderPOIList();
+                closeEditForm();
+                alert('✅ 添加成功：' + name);
+            };
+
+            window.closeEditForm = function () {
+                document.getElementById('editFormContainer').classList.remove('show');
+                document.getElementById('editFormContainer').innerHTML = '';
+            };
+
+            window.deletePOI = function (index) {
+                if (!confirm('确定删除该地点？')) return;
+                const poi = campusPOIs[index];
+                campusPOIs.splice(index, 1);
+                
+                if (currentCanteen && currentCanteen.id === poi.id) {
+                    currentCanteen = null;
+                    currentFloorIndex = -1;
+                    document.getElementById('canteenDetail').style.display = 'none';
+                }
+                
+                savePOIs();
+                refreshAllMarkers();
+                populateSelectors();
+                renderCategoryTags();
+                renderPOIList();
+            };
+
+            function renderPOIList() {
+                const cont = document.getElementById('poiListContainer');
+                if (campusPOIs.length === 0) {
+                    cont.innerHTML = '<div class="empty-state"><i class="fas fa-map-marked-alt"></i><p>暂无地点</p></div>';
+                    return;
+                }
+                
+                let html = '';
+                campusPOIs.forEach((p, i) => {
+                    const config = typeConfig[p.type] || typeConfig.other;
+                    const floorCount = p.floors ? ` (${p.floors.length}层)` : '';
+                    html += `
+                        <div class="poi-list-item">
+                            <span class="poi-icon">${config.icon}</span>
+                            <span class="poi-name">${p.name}</span>
+                            <span class="poi-floors">${floorCount}</span>
+                            <button class="poi-delete" onclick="deletePOI(${i})">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    `;
+                });
+                cont.innerHTML = html;
+            }
+
+            window.toggleManagePanel = function () {
+                const panel = document.getElementById('managePanel');
+                panel.classList.toggle('show');
+            };
+
+            // 初始化
+            function init() {
+                // 初始化深色模式
+                initTheme();
+                
+                map = new AMap.Map('map', {
+                    center: [102.85334, 24.861581],
+                    zoom: 16,
+                    viewMode: '3D',
+                    pitch: 45,
+                    rotation: 15,
+                    mapStyle: 'amap://styles/whitesmoke'
+                });
+                map.addControl(new AMap.Scale());
+                map.addControl(new AMap.ToolBar());
+                map.addControl(new AMap.HawkEye({ position: 'LB' }));
+                
+                walking = new AMap.Walking({ map, autoFitView: true });
+                map.on('click', mapClick);
+                
+                loadPOIs();
+                loadFavorites();
+                loadHistory();
+                refreshAllMarkers();
+                populateSelectors();
+                renderCategoryTags();
+                renderPOIList();
+                
+                // 移动端：点击面板头部展开/收起
+                const panelHeader = document.querySelector('.panel-header');
+                if (panelHeader) {
+                    panelHeader.addEventListener('click', () => {
+                        document.querySelector('.control-panel').classList.toggle('expanded');
+                    });
+                }
+            }
+
+            window.onload = init;
+        })();
+    </script>
+</body>
+</html>
